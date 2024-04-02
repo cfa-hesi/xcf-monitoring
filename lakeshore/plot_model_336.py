@@ -201,7 +201,7 @@ if __name__ == '__main__':
     plt.show()
 
     #--------------------------------------------------------------------------
-    # update plot every `n` seconds
+    # update plot every `update` seconds
     #--------------------------------------------------------------------------
     while True:
         df = temperature_data(input_file, n=rows)

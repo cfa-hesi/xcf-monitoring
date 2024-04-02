@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # -----------------------------------------------------------------------------
-#  plot_vgc503.py
+#  plot_gauge.py
 #
 #  Plot pressure gauge data from the INFICON VGC503 gauge controller.
 #
@@ -27,7 +27,7 @@ def gauge_data(filename, n=86400):
     """
     gauge_data(filename, n)
 
-    Reads in a CSV file with pressure gauge data.  the First column is 
+    Reads in a CSV file with pressure gauge data.  the First column is
     the datetime; the second, third, and fourth columns are channels 1,
     2, and 3 of the INFICON VGC503 gauge controller.
 
@@ -44,12 +44,9 @@ def gauge_data(filename, n=86400):
 
     """
     names = ['datetime', 'ch1', 'ch2', 'ch3']
-    df = None
-    with open(filename, 'r') as f:
-        q = deque(f, n)
-        # i really don't want to use pandas, but here we are
-        df = pd.read_csv(io.StringIO(''.join(q)), names=names,
-                         parse_dates=['datetime'])
+    # i really don't want to use pandas, but here we are
+    df = pd.read_csv(filename, names=names,
+                     parse_dates=['datetime']).tail(n)
     return df
 
 def plot(ax, df):
@@ -96,8 +93,8 @@ def plot(ax, df):
     ax.set_ylabel('pressure [mbar]', horizontalalignment='right', y=1.0,
                   fontsize=14)
 
-    ax.grid(True, which='both', axis='both', color='k', linestyle=':',    
-            linewidth=1, alpha=0.2)                                   
+    ax.grid(True, which='both', axis='both', color='k', linestyle=':',
+            linewidth=1, alpha=0.2)
 
     # semi-log
     ax.set_yscale('log')
@@ -119,52 +116,61 @@ def plot(ax, df):
     # set view limits of axes
     ax.set_ylim(top=3000, bottom=2e-8)
     now = datetime.now()
-    then = np.datetime64(now)-np.timedelta64(len(df.index), 's')
+    # then = np.datetime64(now)-np.timedelta64(len(df.index), 's')
+    then = df['datetime'].iloc[0]
     ax.set_xlim(left=then, right=now)
 
 #------------------------------------------------------------------------------
-# initialize parameters
+# main
 #------------------------------------------------------------------------------
-rows = 86400  # number of rows to plot
-update = 10   # update interval in seconds
+if __name__ == '__main__':
 
-#------------------------------------------------------------------------------
-# parse arguments
-#------------------------------------------------------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument('file', type=str, help='path to CSV file')
-parser.add_argument('--n', type=int, help='number of rows to read from EOF')
-parser.add_argument('--update', type=int, help='update interval in seconds')
-args = parser.parse_args()
+    #--------------------------------------------------------------------------
+    # initialize parameters
+    #--------------------------------------------------------------------------
+    rows = 86400  # number of rows to plot
+    update = 10   # update interval in seconds
 
-input_file = args.file
-if args.n:
-    rows = args.n
-if args.update:
-    update = args.update
+    #--------------------------------------------------------------------------
+    # parse arguments
+    #--------------------------------------------------------------------------
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', type=str, help='path to CSV file')
+    parser.add_argument('--n', type=int,
+                        help='number of rows to read from EOF')
+    parser.add_argument('--update', type=int,
+                        help='update interval in seconds')
+    args = parser.parse_args()
 
-#------------------------------------------------------------------------------
-# fetch pressure gauge data
-#------------------------------------------------------------------------------
-df = gauge_data(input_file, n=rows)
+    input_file = args.file
+    if args.n:
+        rows = args.n
+    if args.update:
+        update = args.update
 
-#------------------------------------------------------------------------------
-# plot pressure gauge data
-#------------------------------------------------------------------------------
-# fig = plt.figure(figsize=(12, 9))
-fig = plt.figure(figsize=(18, 5))
-ax = fig.add_subplot()
-
-plot(ax, df)
-
-plt.tight_layout()
-plt.ion()
-plt.show()
-
-#------------------------------------------------------------------------------
-# update plot every `n` seconds
-#------------------------------------------------------------------------------
-while True:
+    #--------------------------------------------------------------------------
+    # fetch pressure gauge data
+    #--------------------------------------------------------------------------
     df = gauge_data(input_file, n=rows)
+
+    #--------------------------------------------------------------------------
+    # plot pressure gauge data
+    #--------------------------------------------------------------------------
+    # fig = plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(18, 5))
+    ax = fig.add_subplot()
+
     plot(ax, df)
-    plt.pause(update)
+
+    plt.tight_layout()
+    plt.ion()
+    plt.show()
+
+    #--------------------------------------------------------------------------
+    # update plot every `n` seconds
+    #--------------------------------------------------------------------------
+    while True:
+        df = gauge_data(input_file, n=rows)
+        plot(ax, df)
+        plt.pause(update)
+

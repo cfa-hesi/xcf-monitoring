@@ -42,6 +42,8 @@ if __name__ == '__main__':
                         help='number of rows to read from EOF')
     parser.add_argument('--update', type=int,
                         help='update interval in seconds')
+    parser.add_argument('--truncate', action='store_true',
+                        help='plot time axis up to most recent data point')
     args = parser.parse_args()
 
     vgc503_input_file = args.vgc503
@@ -50,6 +52,7 @@ if __name__ == '__main__':
         rows = args.n
     if args.update:
         update = args.update
+    truncate = args.truncate
 
     #--------------------------------------------------------------------------
     # fetch pressure gauge data
@@ -72,8 +75,8 @@ if __name__ == '__main__':
     ax3 = ax2.twinx()
     ax1.tick_params(bottom=False, labelbottom=False)
 
-    plot_vgc503.plot(ax1, df_vgc503)
-    plot_model_336.plot(ax2, ax3, df_model_336)
+    plot_vgc503.plot(ax1, df_vgc503, truncate)
+    plot_model_336.plot(ax2, ax3, df_model_336, truncate)
 
     plt.tight_layout()
     plt.ion()
@@ -84,9 +87,9 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     while True:
         df_vgc503 = plot_vgc503.gauge_data(vgc503_input_file, n=rows)
-        plot_vgc503.plot(ax1, df_vgc503)
+        plot_vgc503.plot(ax1, df_vgc503, truncate)
         df_model_336 = plot_model_336.temperature_data(model_336_input_file,
                                                        n=rows)
-        plot_model_336.plot(ax2, ax3, df_model_336)
+        plot_model_336.plot(ax2, ax3, df_model_336, truncate)
         plt.pause(update)
 

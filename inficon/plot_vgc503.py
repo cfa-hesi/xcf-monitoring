@@ -49,9 +49,9 @@ def gauge_data(filename, n=86400):
                      parse_dates=['datetime']).tail(n)
     return df
 
-def plot(ax, df):
+def plot(ax, df, truncate=False):
     """
-    plot(ax, df)
+    plot(ax, df, truncate)
 
     Plot pressure values in mbar as a function of datetime using data
     from the INFICON VGC503 gauge controller.
@@ -62,6 +62,10 @@ def plot(ax, df):
         matplotlib.axes object.
     df : pandas.DataFrame
         pandas DataFrame with pressure gauge data.
+    truncate : bool, optional
+        If True, then the time axis is shown up to the most recent data
+        point, otherwise the time axis is shown up to the current system
+        time (defaults to False).
 
     Returns
     -------
@@ -70,18 +74,6 @@ def plot(ax, df):
     """
 
     ax.cla()  # clear axes
-
-    #////////////////////////////////////////////////////////
-    # for testing timedelta
-    #////////////////////////////////////////////////////////
-    # t = np.array(df['datetime'], dtype=np.datetime64)
-    # dt = t - np.datetime64(datetime.now())
-    # dt = dt.astype('timedelta64[s]')
-    # ax.plot(dt, df['ch1'], label='channel 1')
-    # ax.plot(dt, df['ch2'], label='channel 2')
-    # ax.axvline(x=then, color='k', linestyle=':')
-    # ax.axvline(x=now, color='k', linestyle=':')
-    #////////////////////////////////////////////////////////
 
     # plot pressure values
     ax.plot(df['datetime'], df['ch1'],
@@ -115,9 +107,10 @@ def plot(ax, df):
 
     # set view limits of axes
     ax.set_ylim(top=3000, bottom=2e-8)
-    now = datetime.now()
-    # then = np.datetime64(now)-np.timedelta64(len(df.index), 's')
     then = df['datetime'].iloc[0]
+    now = datetime.now()
+    if truncate:
+        now = df['datetime'].iloc[-1]
     ax.set_xlim(left=then, right=now)
 
 #------------------------------------------------------------------------------
@@ -140,6 +133,8 @@ if __name__ == '__main__':
                         help='number of rows to read from EOF')
     parser.add_argument('--update', type=int,
                         help='update interval in seconds')
+    parser.add_argument('--truncate', action='store_true',
+                        help='plot time axis up to most recent data point')
     args = parser.parse_args()
 
     input_file = args.file
@@ -147,6 +142,7 @@ if __name__ == '__main__':
         rows = args.n
     if args.update:
         update = args.update
+    truncate = args.truncate
 
     #--------------------------------------------------------------------------
     # fetch pressure gauge data
@@ -156,11 +152,10 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # plot pressure gauge data
     #--------------------------------------------------------------------------
-    # fig = plt.figure(figsize=(12, 9))
     fig = plt.figure(figsize=(18, 5))
     ax = fig.add_subplot()
 
-    plot(ax, df)
+    plot(ax, df, truncate)
 
     plt.tight_layout()
     plt.ion()
@@ -171,6 +166,6 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     while True:
         df = gauge_data(input_file, n=rows)
-        plot(ax, df)
+        plot(ax, df, truncate)
         plt.pause(update)
 

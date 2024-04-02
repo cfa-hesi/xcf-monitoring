@@ -47,9 +47,9 @@ def temperature_data(filename, n=86400):
     df = pd.read_csv(filename, parse_dates=['datetime']).tail(n)
     return df
 
-def plot(ax1, ax2, df):
+def plot(ax1, ax2, df, truncate=False):
     """
-    plot(ax1, ax2, df)
+    plot(ax1, ax2, df, truncate)
 
     Plot temperature values in Celsius as a function of datetime using
     data from the LakeShore Model 336 controller.
@@ -62,6 +62,10 @@ def plot(ax1, ax2, df):
         matplotlib.axes object.
     df : pandas.DataFrame
         pandas DataFrame with temperature data.
+    truncate : bool, optional
+        If True, then the time axis is shown up to the most recent data
+        point, otherwise the time axis is shown up to the current system
+        time (defaults to False).
 
     Returns
     -------
@@ -148,9 +152,11 @@ def plot(ax1, ax2, df):
 
     # set view limits of axes
     ax2.set_ylim(bottom=0, top=1)
-    ax1.set_ylim(bottom=-100, top=30)
-    now = datetime.now()
+    ax1.set_ylim(bottom=-80, top=40)
     then = df['datetime'].iloc[0]
+    now = datetime.now()
+    if truncate:
+        now = df['datetime'].iloc[-1]
     ax1.set_xlim(left=then, right=now)
 
 #------------------------------------------------------------------------------
@@ -173,6 +179,8 @@ if __name__ == '__main__':
                         help='number of rows to read from EOF')
     parser.add_argument('--update', type=int,
                         help='update interval in seconds')
+    parser.add_argument('--truncate', action='store_true',
+                        help='plot time axis up to most recent data point')
     args = parser.parse_args()
 
     input_file = args.file
@@ -180,6 +188,7 @@ if __name__ == '__main__':
         rows = args.n
     if args.update:
         update = args.update
+    truncate = args.truncate
 
     #--------------------------------------------------------------------------
     # fetch temperature controller data
@@ -189,12 +198,11 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # plot temperature controller data
     #--------------------------------------------------------------------------
-    # fig = plt.figure(figsize=(12, 9))
     fig = plt.figure(figsize=(18.3, 5))
     ax1 = fig.add_subplot()
     ax2 = ax1.twinx()
 
-    plot(ax1, ax2, df)
+    plot(ax1, ax2, df, truncate)
 
     plt.tight_layout()
     plt.ion()
@@ -205,6 +213,6 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     while True:
         df = temperature_data(input_file, n=rows)
-        plot(ax1, ax2, df)
+        plot(ax1, ax2, df, truncate)
         plt.pause(update)
 

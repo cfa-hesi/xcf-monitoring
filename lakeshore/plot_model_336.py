@@ -27,15 +27,8 @@ def temperature_data(filename, n=86400):
     """
     temperature_data(filename, n)
 
-    Reads in a CSV file with temperature data.  the First column is 
-    the datetime; the second, third, fourth, and fifth columns are
-    inputs A, B, C, and D of the LakeShore Model 336 temperature
-    controller; the sixth, seventh, eighth, and ninth columns are
-    the control setpoints; the ninth, tenth, eleventh, and twelfth
-    columns are the heater ranges; the thirteenth, fourteenth,
-    fifteenth, and sixteenth columns are the heater outputs, and the
-    seventeenth, eighteenth, nineteenth, and twentieth columns are
-    the maximum currents.
+    Reads in a CSV file with temperature data from the LakeShore Model 336
+    temperature controller.
 
     Parameters
     ----------
@@ -50,33 +43,8 @@ def temperature_data(filename, n=86400):
 
     """
 
-    # names = [
-    #     'datetime',
-    #     'input_a', 'input_b', 'input_c', 'input_d',
-    #     'setpoint_1', 'setpoint_2', 'setpoint_3', 'setpoint_4',
-    #     'heater_range_1', 'heater_range_2', 'heater_range_3', 'heater_range_4',
-    #     'heater_output_1', 'heater_output_2', 'heater_output_3', 'heater_output_4',
-    #     'max_current_1', 'max_current_2', 'max_current_3', 'max_current_4',
-    #     ]
-
-    names = [
-        'datetime',
-        'input_a',
-        'setpoint_1',
-        'heater_range_1',
-        'heater_output_1',
-        'max_current_1',
-        'heater_p_1',
-        'heater_i_1',
-        'heater_d_1',
-        ]
-
-    df = None
-    with open(filename, 'r') as f:
-        q = deque(f, n)
-        # i really don't want to use pandas, but here we are
-        df = pd.read_csv(io.StringIO(''.join(q)), names=names,
-                         parse_dates=['datetime'])
+    # i really don't want to use pandas, but here we are
+    df = pd.read_csv(filename, parse_dates=['datetime']).tail(n)
     return df
 
 def plot(ax1, ax2, df):
@@ -115,23 +83,38 @@ def plot(ax1, ax2, df):
     ax1.plot(df['datetime'], df['setpoint_1'],
              label='setpoint 1: {} $\!^\circ\!$C'
              .format(df['setpoint_1'].iloc[-1]),
-             color='C1', linestyle='--', linewidth=1)
+             color='C1', linestyle=':', linewidth=1)
+    ax1.plot(df['datetime'], df['input_b'],
+             label='input B: {} $\!^\circ\!$C'.format(df['input_b'].iloc[-1]),
+             color='C2', linestyle='--')
+    ax1.plot(df['datetime'], df['setpoint_2'],
+             label='setpoint 2: {} $\!^\circ\!$C'
+             .format(df['setpoint_2'].iloc[-1]),
+             color='C3', linestyle=':', linewidth=1)
 
-    # plot temperature and setpoint values
+    # plot heater values
     ax2.plot(df['datetime'], df['heater_range_1']/20,
              label='heater range 1: {}'
              .format(heater_range_dict[df['heater_range_1'].iloc[-1]]),
-             color='C2', linestyle=':', linewidth=1)
+             color='C4', linestyle=':', linewidth=1)
     ax2.plot(df['datetime'], df['heater_output_1']/100,
              label='heater output 1: {} %'
              .format(df['heater_output_1'].iloc[-1]),
-             color='C3', linestyle=':', linewidth=1)
+             color='C5', linestyle=':', linewidth=1)
+    ax2.plot(df['datetime'], df['heater_range_2']/20,
+             label='heater range 2: {}'
+             .format(heater_range_dict[df['heater_range_2'].iloc[-1]]),
+             color='C4', linestyle=':', linewidth=1)
+    ax2.plot(df['datetime'], df['heater_output_2']/100,
+             label='heater output 2: {} %'
+             .format(df['heater_output_2'].iloc[-1]),
+             color='C5', linestyle=':', linewidth=1)
 
-    ax1.set_ylabel('temperature [$\!^\circ\!$C]', horizontalalignment='right', y=1.0,
-                   fontsize=14)
+    ax1.set_ylabel('temperature [$\!^\circ\!$C]', horizontalalignment='right',
+                   y=1.0, fontsize=14)
 
-    ax1.grid(True, which='both', axis='both', color='k', linestyle=':',    
-            linewidth=1, alpha=0.2)                                   
+    ax1.grid(True, which='both', axis='both', color='k', linestyle=':',
+            linewidth=1, alpha=0.2)
 
     ax1.xaxis.set_minor_locator(mticker.AutoMinorLocator())
     ax1.yaxis.set_minor_locator(mticker.AutoMinorLocator())
@@ -150,69 +133,78 @@ def plot(ax1, ax2, df):
 
     # text box
     props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-    textstr = '\n'.join((
+    textstr = 'heater 1\n' + '\n'.join((
         'P: {:>6.1f}'.format(df['heater_p_1'].iloc[-1], ),
         'I: {:>6.1f}'.format(df['heater_i_1'].iloc[-1], ),
         'D: {:>6.1f}'.format(df['heater_d_1'].iloc[-1], )))
-    ax1.text(0.014, 0.75, textstr, transform=ax1.transAxes, fontsize=14,
+    ax1.text(0.015, 0.575, textstr, transform=ax1.transAxes, fontsize=12,
+             verticalalignment='top', bbox=props, fontname='monospace')
+    textstr = 'heater 2\n' + '\n'.join((
+        'P: {:>6.1f}'.format(df['heater_p_2'].iloc[-1], ),
+        'I: {:>6.1f}'.format(df['heater_i_2'].iloc[-1], ),
+        'D: {:>6.1f}'.format(df['heater_d_2'].iloc[-1], )))
+    ax1.text(0.080, 0.575, textstr, transform=ax1.transAxes, fontsize=12,
              verticalalignment='top', bbox=props, fontname='monospace')
 
     # set view limits of axes
-    ax1.set_ylim(bottom=-60, top=40)
-    # ax1.set_ylim(bottom=15, top=30)
-    # ax1.set_ylim(bottom=15.0, top=30.0)
-    # ax1.set_ylim(bottom=-35.0, top=-25.0)
-    # ax1.set_ylim(bottom=-100.0, top=0.0)
-    ax1.set_ylim(bottom=-100, top=40)
     ax2.set_ylim(bottom=0, top=1)
+    ax1.set_ylim(bottom=-100, top=30)
     now = datetime.now()
-    then = np.datetime64(now)-np.timedelta64(len(df.index), 's')
+    then = df['datetime'].iloc[0]
     ax1.set_xlim(left=then, right=now)
 
 #------------------------------------------------------------------------------
-# initialize parameters
+# main
 #------------------------------------------------------------------------------
-rows = 86400  # number of rows to plot
-update = 10   # update interval in seconds
+if __name__ == '__main__':
 
-#------------------------------------------------------------------------------
-# parse arguments
-#------------------------------------------------------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument('file', type=str, help='path to CSV file')
-parser.add_argument('--n', type=int, help='number of rows to read from EOF')
-parser.add_argument('--update', type=int, help='update interval in seconds')
-args = parser.parse_args()
+    #--------------------------------------------------------------------------
+    # initialize parameters
+    #--------------------------------------------------------------------------
+    rows = 86400  # number of rows to plot
+    update = 10   # update interval in seconds
 
-input_file = args.file
-if args.n:
-    rows = args.n
-if args.update:
-    update = args.update
+    #--------------------------------------------------------------------------
+    # parse arguments
+    #--------------------------------------------------------------------------
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', type=str, help='path to CSV file')
+    parser.add_argument('--n', type=int,
+                        help='number of rows to read from EOF')
+    parser.add_argument('--update', type=int,
+                        help='update interval in seconds')
+    args = parser.parse_args()
 
-#------------------------------------------------------------------------------
-# fetch pressure gauge data
-#------------------------------------------------------------------------------
-df = temperature_data(input_file, n=rows)
+    input_file = args.file
+    if args.n:
+        rows = args.n
+    if args.update:
+        update = args.update
 
-#------------------------------------------------------------------------------
-# plot pressure gauge data
-#------------------------------------------------------------------------------
-# fig = plt.figure(figsize=(12, 9))
-fig = plt.figure(figsize=(18.3, 5))
-ax1 = fig.add_subplot()
-ax2 = ax1.twinx()
-
-plot(ax1, ax2, df)
-
-plt.tight_layout()
-plt.ion()
-plt.show()
-
-#------------------------------------------------------------------------------
-# update plot every `n` seconds
-#------------------------------------------------------------------------------
-while True:
+    #--------------------------------------------------------------------------
+    # fetch temperature controller data
+    #--------------------------------------------------------------------------
     df = temperature_data(input_file, n=rows)
+
+    #--------------------------------------------------------------------------
+    # plot temperature controller data
+    #--------------------------------------------------------------------------
+    # fig = plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(18.3, 5))
+    ax1 = fig.add_subplot()
+    ax2 = ax1.twinx()
+
     plot(ax1, ax2, df)
-    plt.pause(update)
+
+    plt.tight_layout()
+    plt.ion()
+    plt.show()
+
+    #--------------------------------------------------------------------------
+    # update plot every `n` seconds
+    #--------------------------------------------------------------------------
+    while True:
+        df = temperature_data(input_file, n=rows)
+        plot(ax1, ax2, df)
+        plt.pause(update)
+

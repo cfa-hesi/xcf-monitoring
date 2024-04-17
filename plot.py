@@ -68,7 +68,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # plot pressure gauge and temperature controller data
     #--------------------------------------------------------------------------
-    fig = plt.figure(figsize=(18.3, 10))
+    fig = plt.figure(figsize=(18.3, 9.6))
     gs = gridspec.GridSpec(ncols=1, nrows=2, figure=fig)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1], sharex=ax1)
